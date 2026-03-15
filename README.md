@@ -6,11 +6,11 @@ Counts CP/CPk and shows Probability Density Function (PDF) of Normal Distributio
 4. Check your graphs.
 
 Available next parameters on graphs:
-CP
-CPk
-σ
-Probability Density Function (PDF) of Normal Distribution
-Center of PDF
-Target value of center
-Zones of 1σ, 2σ, 3σ
-USL/LSL   
+1. CP
+2. CPk
+3. σ
+4. Probability Density Function (PDF) of Normal Distribution
+5. Center of PDF
+6. Target value of center
+7. Zones of 1σ, 2σ, 3σ
+8. USL/LSL   
