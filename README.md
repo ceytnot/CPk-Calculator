@@ -13,4 +13,6 @@ Available next parameters on graphs:
 5. Center of PDF
 6. Target value of center
 7. Zones of 1σ, 2σ, 3σ
-8. USL/LSL   
+8. USL/LSL
+
+![Screenshot](images/screenshot.PNG)
