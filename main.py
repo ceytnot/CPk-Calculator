@@ -1,5 +1,4 @@
 # C:\Users\NewHorizon\Documents\PythonProjects\cpk_calculator\venv\Scripts\Activate.ps1
-
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
