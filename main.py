@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import os
+import sys
 
 import math
 
@@ -35,8 +36,10 @@ def select_excel_file():
             return file_path
         else:
             messagebox.showerror("Ошибка", "Файл не существует")
+            root.deiconify()
             return None
     else:
+        root.deiconify()
         return None
 
 
@@ -89,10 +92,14 @@ def download_template():
             cell.alignment = center_alignment
 
     try:
-        filename = "cpk_template.xlsx"
         wb.save(FILENAME)
         status_label.config(text="✅ Шаблон выгружен", foreground="green")
-        current_dir = os.path.dirname(os.path.abspath(__file__))
+
+        if getattr(sys, 'frozen', False):
+            current_dir = os.path.dirname(sys.executable)  # in case compiled exe
+        else:
+            current_dir = os.path.dirname(__file__) # in case script
+
         file_path = os.path.join(current_dir, FILENAME)
 
         os.startfile(file_path)
@@ -101,6 +108,7 @@ def download_template():
         status_label.config(text=f"❌ Ошибка: Нет прав на запись или файл открыт в другой программе", foreground="red")
 
     except Exception as e:
+        print(e)
         status_label.config(text=f"❌ Ошибка при сохранении", foreground="red")
 
 
@@ -113,10 +121,10 @@ def normal_pdf(x, mean, std):
 
 def show_drawings(results, values):
     """Counts parameters based on values and shows drawing in Matplotlib"""
-    fig, ax = plt.subplots(figsize=(14, 8))
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 10))
 
     # Histogram
-    n, bins, patches = ax.hist(values, bins=10, edgecolor='black', alpha=0.6, 
+    n, bins, patches = ax1.hist(values, bins=10, edgecolor='black', alpha=0.6, 
                                color='skyblue', label='Данные')
     
     # Get parameters
@@ -136,90 +144,148 @@ def show_drawings(results, values):
     # SCALE the normal distribution curve to fit the histogram
     bin_width = bins[1] - bins[0]
     y_scaled = normal_pdf(x, mean, std) * len(values) * bin_width
-    ax.plot(x, y_scaled, 'r-', linewidth=2.5, label='Нормальное распределение')
+    ax1.plot(x, y_scaled, 'r-', linewidth=2.5, label='Нормальное распределение')
 
     # get max_y
     max_y = max(y_scaled)
 
     # Central line of PDF
-    ax.axvline(mean, color='red', linestyle='-', linewidth=2, 
+    ax1.axvline(mean, color='red', linestyle='-', linewidth=2, 
                label=f"Центр НР (μ): {mean:.2f}", alpha=0.7)
     
     # Target central line
-    ax.axvline(target, color='purple', linestyle='-.', linewidth=3, 
+    ax1.axvline(target, color='purple', linestyle='-.', linewidth=3, 
                label=f"Целевое значение (Target): {target:.2f}", alpha=0.8)
     
     # USL and LSL
-    ax.axvline(usl, color='green', linestyle='--', linewidth=1.5, 
+    ax1.axvline(usl, color='green', linestyle='--', linewidth=1.5, 
                label=f"USL: {usl}", alpha=0.7)
-    ax.axvline(lsl, color='green', linestyle='--', linewidth=1.5, 
+    ax1.axvline(lsl, color='green', linestyle='--', linewidth=1.5, 
                label=f"LSL: {lsl}", alpha=0.7)
 
-    # Leveld for Sigma
+    # Levels for Sigma
     #colors = ['orange', 'gold', 'lightcoral']
-    colors = ["#bfffb2", "#d7ffb2", "#deffb2"]
+    colors = ["#bfffb2", "#c3ff8a", "#f1ff72"]
+  
+
     alphas = [0.3, 0.2, 0.1]
     
     for i in range(1, 4):
         # vertical lines for sigma
-        ax.axvline(mean + i*std, color='gray', linestyle=':', linewidth=1, alpha=0.5)
-        ax.axvline(mean - i*std, color='gray', linestyle=':', linewidth=1, alpha=0.5)
+        ax1.axvline(mean + i*std, color='gray', linestyle=':', linewidth=1, alpha=0.5)
+        ax1.axvline(mean - i*std, color='gray', linestyle=':', linewidth=1, alpha=0.5)
         
         # Fill areas for sigma
         if i == 1:
-            ax.axvspan(mean - std, mean + std, alpha=alphas[0], color=colors[0], 
+            ax1.axvspan(mean - std, mean + std, alpha=alphas[0], color=colors[0], 
                        label=f'±1σ (68.3%)')
             
             # Label 1σ inside area
-            ax.text(mean, max_y * 0.5, '1σ', fontsize=10, 
+            ax1.text(mean, max_y * 0.5, '1σ', fontsize=10, 
                    ha='center', va='center', color='black', fontweight='bold',
                    bbox=dict(boxstyle='round', facecolor='white', alpha=0.7))
             
         elif i == 2:
-            ax.axvspan(mean - 2*std, mean - std, alpha=alphas[1], color=colors[1])
-            ax.axvspan(mean + std, mean + 2*std, alpha=alphas[1], color=colors[1])
-            ax.fill_between([], [], [], color=colors[1], alpha=alphas[1], 
+            ax1.axvspan(mean - 2*std, mean - std, alpha=alphas[1], color=colors[1])
+            ax1.axvspan(mean + std, mean + 2*std, alpha=alphas[1], color=colors[1])
+            ax1.fill_between([], [], [], color=colors[1], alpha=alphas[1], 
                            label=f'±2σ (95.5%)')
             
             # Label 2σ inside area
-            ax.text(mean - 1.5*std, max_y * 0.3, '2σ', fontsize=9, 
+            ax1.text(mean - 1.5*std, max_y * 0.3, '2σ', fontsize=9, 
                    ha='center', va='center', color='black', fontweight='bold',
                    bbox=dict(boxstyle='round', facecolor='white', alpha=0.7))
-            ax.text(mean + 1.5*std, max_y * 0.3, '2σ', fontsize=9, 
+            ax1.text(mean + 1.5*std, max_y * 0.3, '2σ', fontsize=9, 
                    ha='center', va='center', color='black', fontweight='bold',
                    bbox=dict(boxstyle='round', facecolor='white', alpha=0.7))
             
         elif i == 3:
-            ax.axvspan(mean - 3*std, mean - 2*std, alpha=alphas[2], color=colors[2])
-            ax.axvspan(mean + 2*std, mean + 3*std, alpha=alphas[2], color=colors[2])
-            ax.fill_between([], [], [], color=colors[2], alpha=alphas[2], 
+            ax1.axvspan(mean - 3*std, mean - 2*std, alpha=alphas[2], color=colors[2])
+            ax1.axvspan(mean + 2*std, mean + 3*std, alpha=alphas[2], color=colors[2])
+            ax1.fill_between([], [], [], color=colors[2], alpha=alphas[2], 
                            label=f'±3σ (99.7%)')
             
             # Label 3σ inside area
-            ax.text(mean - 2.5*std, max_y * 0.15, '3σ', fontsize=8, 
+            ax1.text(mean - 2.5*std, max_y * 0.15, '3σ', fontsize=8, 
                    ha='center', va='center', color='black', fontweight='bold',
                    bbox=dict(boxstyle='round', facecolor='white', alpha=0.7))
-            ax.text(mean + 2.5*std, max_y * 0.15, '3σ', fontsize=8, 
+            ax1.text(mean + 2.5*std, max_y * 0.15, '3σ', fontsize=8, 
                    ha='center', va='center', color='black', fontweight='bold',
                    bbox=dict(boxstyle='round', facecolor='white', alpha=0.7))
 
     # Vertical line - Center of PDF
-    ax.plot([mean, mean], [0, max_y], color='blue', linestyle=':', linewidth=1, alpha=0.5)
+    ax1.plot([mean, mean], [0, max_y], color='blue', linestyle=':', linewidth=1, alpha=0.5)
 
     # Defect areas
     defect_values = [v for v in values if v < lsl or v > usl]
     if defect_values:
-        ax.scatter(defect_values, [0] * len(defect_values), 
+        ax1.scatter(defect_values, [0] * len(defect_values), 
                   color='red', s=50, zorder=5, marker='v', 
                   label=f'Брак ({len(defect_values)} шт.)')
 
     # Labels and titles
-    ax.set_xlabel('Значения', fontsize=12)
-    ax.set_ylabel('Частота', fontsize=12)
-    ax.set_title('Нормальное распределение', 
+    ax1.set_xlabel('Значения', fontsize=12)
+    ax1.set_ylabel('Частота', fontsize=12)
+    ax1.set_title('Нормальное распределение', 
                  fontsize=14, fontweight='bold')
-    ax.legend(loc='upper right', fontsize=9)
-    ax.grid(True, alpha=0.3)
+    ax1.legend(loc='upper right', fontsize=9)
+    ax1.grid(True, alpha=0.3)
+
+    # SECOND GRAPH
+    # count indices for horizontal axis
+    x_indices = list(range(1, len(values) + 1))
+    
+    # linear graph
+    ax2.plot(x_indices, values, 'b-', linewidth=2, marker='o', 
+             markersize=4, label='Измерения')
+    
+    # Горизонтальные линии границ допуска
+    ax2.axhline(y=usl, color='green', linestyle='--', linewidth=1.5, 
+                label=f'USL: {usl}', alpha=0.7)
+    ax2.axhline(y=lsl, color='green', linestyle='--', linewidth=1.5, 
+                label=f'LSL: {lsl}', alpha=0.7)
+    
+    # Горизонтальная линия среднего
+    ax2.axhline(y=mean, color='red', linestyle='-', linewidth=2, 
+                label=f'Среднее: {mean:.2f}', alpha=0.7)
+    
+    # Горизонтальная линия целевого значения
+    ax2.axhline(y=target, color='purple', linestyle='-.', linewidth=2, 
+                label=f'Целевое значение: {target:.2f}', alpha=0.8)
+    
+    # Sigma levels (areas) colors = ["#bfffb2", "#d7ffb2", "#deffb2"]
+    ax2.fill_between(x_indices, mean - std, mean + std, alpha=0.2, color=colors[0], 
+                     label=f'±1σ ({mean-std:.2f} - {mean+std:.2f})')
+    ax2.fill_between(x_indices, mean - 2*std, mean + 2*std, alpha=0.1, color=colors[1], 
+                     label=f'±2σ ({mean-2*std:.2f} - {mean+2*std:.2f})')
+    ax2.fill_between(x_indices, mean - 3*std, mean + 3*std, alpha=0.05, color=colors[2], 
+                     label=f'±3σ ({mean-3*std:.2f} - {mean+3*std:.2f})')
+    
+    # Higlights for defects
+    defect_indices = []
+    defect_values_list = []
+    for i, val in enumerate(values):
+        if val < lsl or val > usl:
+            defect_indices.append(x_indices[i])
+            defect_values_list.append(val)
+    
+    if defect_indices:
+        ax2.scatter(defect_indices, defect_values_list, color='red', s=80, 
+                   zorder=5, marker='v', label=f'Брак ({len(defect_indices)} шт.)')
+    
+    # Properties of second graph
+    ax2.set_xlabel('Номер измерения', fontsize=12)
+    ax2.set_ylabel('Значение', fontsize=12)
+    ax2.set_title('Линейный график измерений', fontsize=14, fontweight='bold')
+    ax2.legend(loc='upper right', fontsize=9)
+    ax2.grid(True, alpha=0.3)
+    
+    # Устанавливаем одинаковые пределы по Y для обоих графиков
+    y_min = min(lsl - 0.5, min(values) - 0.5, mean - 4*std)
+    y_max = max(usl + 0.5, max(values) + 0.5, mean + 4*std)
+    ax2.set_ylim(y_min, y_max)
+
+    # COMMON TEXT AND LABELS
 
     textstr = (f'Cp = {results["cp"]:.2f}\n'
                f'Cpk = {results["cpk"]:.2f}\n'
@@ -227,16 +293,18 @@ def show_drawings(results, values):
                f'σ = {std:.2f}\n'
                #f'Target = {target:.2f}\n'
                f'Значений = {results["n"]}')
+
     
     # text block with statistic
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.9)
-    ax.text(0.02, 0.98, textstr, transform=ax.transAxes, fontsize=9,
+    ax1.text(0.02, 0.98, textstr, transform=ax1.transAxes, fontsize=9,
             verticalalignment='top', bbox=props)
 
     plt.tight_layout()
     plt.show(block=False)
 
-def calculate_cpk(data_values):
+def calculate_cpk(data_values: dict) -> tuple[dict, list[float]]:
+    """Returns results (cp, cpk, mean and so on...) and measurements"""
     
     usl = data_values['usl']
     lsl = data_values['lsl']
